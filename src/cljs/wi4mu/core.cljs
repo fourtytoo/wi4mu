@@ -69,16 +69,6 @@
    [:td (:from msg)]
    [:td (:subject msg)]])
 
-(defn message-list-component [message-list]
-  (fn []
-    [:table ;; .table.table-striped.table-bordered 
-     {:class "mlist"}
-     [:thead [:tr [:th "date"][:th "subject"][:th "from"]]]
-     [:tbody {:style {:overflow-y "auto" :height "400px"}}
-      (map message-row @message-list (cycle ["#eee" "#fff"]))]]))
-
-(def Button (reagent/adapt-react-class (aget js/ReactBootstrap "Button")))
-
 (defn text-input-component [search-string message-list]
   [:div
    [:button {:on-click #(load-message-list @search-string message-list)} "search"]

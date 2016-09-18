@@ -22,7 +22,6 @@
 (defn fetch [url qparms]
   (let [c (chan)]
     (go (let [{:keys [status success body] :as answer} (<! (http/get url {:query-params qparms}))]
-          (prn answer)                  ; -wcp17/9/16.
           (if (and success (= 200 status))
             (>! c body)
             (>! c nil))))
@@ -61,8 +60,6 @@
        vec
        (reset! message-list)
        go))
-
-#_(go (prn (<! (fetch "/find" {:query "mamma"}))))
 
 (defn message-row [msg bgc]
   ^{:key (:msgid msg)}
@@ -128,21 +125,6 @@
 (reagent/render [message-component current-message]
                 (js/document.getElementById "message"))
 
-#_(reagent/render [message-list-component message-list]
-                (js/document.getElementById "message-list"))
-
-;; (defn data-table-did-mount [this & options]
-;;   (.DataTable (js/$ (reagent/dom-node this))
-;;               ;; {:searching true :sorting true :paging false :scrollY 400}
-;;               #_(apply hash-map options)))
-
-;; (defn dt-ml-component []
-;;   (reagent/create-class {:reagent-render message-list-component
-;;                          :component-did-mount #(data-table-did-mount %)}))
-
-;; (reagent/render [dt-ml-component message-list]
-;;                 (js/document.getElementById "message-list"))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def Table (reagent/adapt-react-class js/FixedDataTable.Table))
@@ -181,7 +163,7 @@
                                  timec/from-long
                                  format-time)]))
 
-(defn home-page [message-list]
+(defn message-list-component [message-list]
   (let [mc (partial text-cell message-list)]
     [:div {:class "list"}
      [Table {:width        1000
@@ -193,5 +175,5 @@
       [Column {:header "from" :cell mc :columnKey :from :width 200 :flexGrow 1}]
       [Column {:header "subject" :cell mc :columnKey :subject :width 450 :flexGrow 2}]]]))
 
-(reagent/render [home-page message-list]
+(reagent/render [message-list-component message-list]
                 (js/document.getElementById "message-list"))

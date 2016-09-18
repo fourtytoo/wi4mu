@@ -2,9 +2,12 @@
 
 A simple Web Interface for MU.
 
-This code has been written as an exercise to learn ClojureScript (the
-best language for the browser there is), Reagent and React.  It is not
-meant to be useful beyond that.
+This code has been written as an exercise to learn
+[ClojureScript](http://clojurescript.org) (the best language for the
+browser there is), [Reagent](http://reagent-project.github.io) and
+[React](http://facebook.github.io/react/).  And maybe an example you
+could look at for inspiration.  It is not meant to be useful beyond
+that.
 
 If you need a full and neat interface to MU, you should already know
 that MU comes, out of the box, with mu4e, which has everything you

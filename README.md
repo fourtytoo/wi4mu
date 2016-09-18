@@ -15,7 +15,16 @@ $ lein uberjar
 $ java -cp target/wi4mu.jar clojure.main -m wi4mu.server
 ```
 
-or read the following...
+Then visit `http://localhost:10555`.  Or you can specify a different
+port on the command line:
+
+```sh
+$ java -cp target/wi4mu.jar clojure.main -m wi4mu.server 13337
+```
+
+and browse `http://localhost:13337` instead.
+
+Or read the following...
 
 
 ## Development

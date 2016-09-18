@@ -5,10 +5,11 @@
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
             [ring.middleware.gzip :refer [wrap-gzip]]
             [ring.middleware.logger :refer [wrap-with-logger]]
+            [ring.middleware.content-type :refer [wrap-content-type]]
             [environ.core :refer [env]]
             [org.httpkit.server :refer [run-server]]
             [ring.middleware.format :refer [wrap-restful-format]]
-            [ring.util.response :refer [response resource-response]]
+            [ring.util.response :as response]
             [clojure.java.shell :refer [sh]]
             [environ.core :refer [env]]
             [clojure.xml :as xml]
@@ -58,9 +59,9 @@
       mail/file->message))
 
 (defn edn-response [body]
-  {:status 200
-   :headers {"Content-Type" "application/edn; charset=utf-8"}
-   :body (pr-str body)})
+  (-> (pr-str body)
+      response/response
+      (response/content-type "application/edn")))
 
 (defn html-response [body]
   {:status 200
@@ -120,15 +121,15 @@
 
 (defroutes routes
   (GET "/" _
-       (resource-response "public/index.html"))
-  (GET  "/find" {params :params}
-        (edn-response (find-messages (:query params))))
-  (GET  "/msg" {params :params}
-        (msg-response (get-message (:id params))
-                      (keyword (or (:content-type params) :plain))))
+       (response/redirect "/index.html"))
+  (GET  "/find" [query]
+        (edn-response (find-messages query)))
+  (GET  "/msg" [id content-type]
+        (msg-response (get-message id)
+                      (keyword (or content-type :plain))))
+  ;; this will serve the main page, the css style files and all the rest
+  (route/resources "/")
   (route/not-found "Not Found"))
-
-#_(msg-response (get-message "6405B5ADEB0F41449CD57E79184CBF957732E0C3ED@DEFRCDBG003.de.db.com") :plain)
 
 (defn wrap-exception [f]
   (fn [request]
@@ -147,6 +148,7 @@
       wrap-restful-format
       ;; wrap-json-response
       (wrap-defaults api-defaults)
+      wrap-content-type
       wrap-with-logger
       wrap-gzip))
 

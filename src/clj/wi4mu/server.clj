@@ -50,9 +50,6 @@
       first
       :path))
 
-#_(defn get-message [id]
-    (-> id get-message-pathname slurp))
-
 (defn get-message [id]
   (-> id
       get-message-pathname
@@ -114,11 +111,6 @@
    :headers {"Content-Type" "application/edn; charset=utf-8"}
    :body (pr-str (message->edn msg ctype))})
 
-#_(let [msg (get-message "FFE0A5E365324621AE1A4358C4341C42@webfarm.local")]
-  (message->edn msg))
-
-#_(clojure-mail.message/mime-type (clojure-mail.message/get-content (mail/file->message (get-message-pathname "FFE0A5E365324621AE1A4358C4341C42@webfarm.local"))))
-
 (defroutes routes
   (GET "/" _
        (response/redirect "/index.html"))
@@ -138,15 +130,10 @@
         {:status 500
          :body (or (ex-data e) e)}))))
 
-#_(try (throw (ex-info "MU failed" {:foo 1}))
-     (catch Exception e (type e)))
-
 (def http-handler
   (-> routes
-      ; ; wrap-json-body
       wrap-exception
       wrap-restful-format
-      ;; wrap-json-response
       (wrap-defaults api-defaults)
       wrap-content-type
       wrap-with-logger

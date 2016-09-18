@@ -38,13 +38,6 @@
 (defn fetch-message [id]
   (fetch "/msg" {:id id :content-type :plain}))
 
-#_(go (prn (<! (fetch-message "20726.53448.999285.177003@scylla.home.lan"))))
-(go (prn (<! (fetch-message "6405B5ADEB0F41449CD57E79184CBF957732E0C3ED@DEFRCDBG003.de.db.com"))))
-
-#_(go (let [msg (<! (fetch-message "FFE0A5E365324621AE1A4358C4341C42@webfarm.local"))
-          headers (:headers msg)]
-      (doall (map #(prn (type %)) headers))))
-
 (defn load-message [id message]
   (reset! message (str "Loading " id " ..."))
   (->> (fetch-message id)

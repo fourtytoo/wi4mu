@@ -40,8 +40,9 @@
           (= exit 4) nil
           :else (throw (ex-info "MU failed" result)))))
 
-(defn find-messages [& query]
-  (->> (extract-msg-data (apply mu-find query) [:msgid :date :from :subject])
+(defn find-messages [query]
+  (->> (extract-msg-data (apply mu-find (if (vector? query) query [query]))
+                         [:msgid :date :from :subject])
        (map #(update % :date (fn [str] (. Integer parseInt str))))))
 
 (defn get-message-pathname [id]

@@ -47,7 +47,8 @@
 
 (defn load-message-list [query message-list]
   (reset! message-list (str "Searching for " query " ..."))
-  (->> {:query query}
+  (->> (string/split query #"\s+")
+       (assoc {} :query)
        (fetch "/find")
        <!
        vec

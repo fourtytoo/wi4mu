@@ -12,7 +12,7 @@ need and some.
 
 ```sh
 $ lein uberjar
-$ java -jar ./target/wi4mu.jar
+$ java -cp target/wi4mu.jar clojure.main -m wi4mu.server
 ```
 
 or read the following...

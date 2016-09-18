@@ -1,23 +1,38 @@
 (defproject wi4mu "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
+  :description "A web interface for MU"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.89" :scope "provided"]
+                 [org.clojure/core.async "0.2.391"]
                  [com.cognitect/transit-clj "0.8.285"]
                  [ring "1.4.0"]
                  [ring/ring-defaults "0.2.0"]
                  [bk/ring-gzip "0.1.1"]
                  [ring.middleware.logger "0.5.0"]
+                 [ring-middleware-format "0.7.0"]
                  [compojure "1.5.0"]
                  [environ "1.0.3"]
                  [http-kit "2.1.19"]
-                 [reagent "0.6.0-rc"]]
-
+                 [reagent "0.6.0-rc"]
+                 [org.clojure/data.xml "0.0.8"]
+                 [org.clojure/data.zip "0.1.2"]
+                 [cljs-http "0.1.41"]
+                 [com.andrewmcveigh/cljs-time "0.4.0"]
+                 [cljsjs/react-bootstrap "0.30.2-0"
+                  :exclusions [cljsjs/react]]
+                 [cljsjs/fixed-data-table "0.6.3-0"
+                  ;; The version pulled by FDT is old and clashes with
+                  ;; the version pulled by reagent (above) and causes
+                  ;; the "ReactDOM is missing" error.
+                  :exclusions [cljsjs/react]]
+                 [io.forward/clojure-mail "1.0.5"]]
+  
   :plugins [[lein-cljsbuild "1.1.3"]
-            [lein-environ "1.0.3"]]
+            [lein-environ "1.0.3"]
+            [lein-externs "0.1.5"]]
 
   :min-lein-version "2.6.1"
 
@@ -63,6 +78,8 @@
                 :compiler {:main wi4mu.core
                            :output-to "resources/public/js/compiled/wi4mu.js"
                            :output-dir "target"
+                           ;; for fixed-data-tables
+                           :externs ["externs.js"]
                            :source-map-timestamp true
                            :optimizations :advanced
                            :pretty-print false}}]}

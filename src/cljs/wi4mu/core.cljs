@@ -92,8 +92,9 @@
                    (map (fn [tag]
                           [:tr [:td tag] [:td (hdr message tag)]])
                         ["date" "subject" "from" "to"]))]
-                 [:div {:class "message"}
-                  [:pre (:body @message)]]])))
+                 [:frame {:style {:overflow "auto" :height "50%"}}
+                  [:div {:class "message"}
+                   [:pre (:body @message)]]]])))
 
 (reagent/render [text-input-component search-string message-list]
                 (js/document.getElementById "search-entry"))

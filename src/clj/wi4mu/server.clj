@@ -35,7 +35,7 @@
              (columns tags)))
 
 (defn mu-find [& query]
-  (let [{:keys [exit out] :as result} (apply sh "mu" "find" "--format" "xml" "--" query)]
+  (let [{:keys [exit out] :as result} (apply sh "mu" "find" "--format" "xml" "-s" "date" "--reverse" "--" query)]
     (cond (zero? exit) (dxml/parse-str out)
           (= exit 4) nil
           :else (throw (ex-info "MU failed" result)))))

@@ -55,14 +55,6 @@
        (reset! message-list)
        go))
 
-(defn message-row [msg bgc]
-  ^{:key (:msgid msg)}
-  [:tr {;; :style {:backgroundColor bgc}
-        :on-click #(load-message (:msgid msg) current-message)}
-   [:td (format-time (timec/from-long (:date msg)))]
-   [:td (:from msg)]
-   [:td (:subject msg)]])
-
 (defn text-input-component [search-string message-list]
   [:div
    [:button {:on-click #(load-message-list @search-string message-list)} "search"]

@@ -144,6 +144,9 @@
 (defn message-list-component [message-list]
   (let [mc (partial text-cell message-list)]
     [:div {:class "list"}
+     (when @message-list
+       [:span "messages: "
+        (count @message-list)])
      [Table {:width        1000
              :height       200
              :rowHeight    25

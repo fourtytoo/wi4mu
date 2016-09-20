@@ -137,6 +137,7 @@
   (reagent/as-element [Cell (->> (cell-args args)
                                  cell-address
                                  (apply get-cell-data message-list)
+                                 (* 1000)
                                  timec/from-long
                                  format-time)]))
 

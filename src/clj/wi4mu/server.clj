@@ -19,7 +19,9 @@
             [clojure.data.zip.xml :as dzx]
             [clojure.string :as string]
             [clojure-mail.core :as mail]
-            [clojure-mail.message :as message])
+            [clojure-mail.message :as message]
+            [hiccup.core :refer [html]]
+            [wi4mu.common :as util])
   (:gen-class))
 
 (defn columns [tags]
@@ -55,21 +57,6 @@
   (-> id
       get-message-pathname
       mail/file->message))
-
-(defn edn-response [body]
-  (-> (pr-str body)
-      response/response
-      (response/content-type "application/edn")))
-
-(defn html-response [body]
-  {:status 200
-   :headers {"Content-Type" "text/html; charset=utf-8"}
-   :body (str body)})
-
-(defn txt-response [body]
-  {:status 200
-   :headers {"Content-Type" "text/plain; charset=utf-8"}
-   :body (str body)})
 
 (defn message-headers [msg]
   (map (comp first (partial into []))
@@ -107,19 +94,61 @@
      :body body
      :content-type content-type}))
 
-(defn msg-response [msg ctype]
-  {:status 200
-   :headers {"Content-Type" "application/edn; charset=utf-8"}
-   :body (pr-str (message->edn msg ctype))})
+(defn hdr= [h1 h2]
+  (= (string/lower-case h1)
+     (string/lower-case h2)))
+
+(defn in? 
+  "true if coll contains elm"
+  [coll elm]  
+  (some #(= elm %) coll))
+
+(defn message->html [msg]
+  (let [[body content-type] (extract-message-body msg :plain)
+        headers (util/sort-headers (message-headers msg))
+        hdr (fn [[tag value]]
+              [:tr [:td tag] [:td value]])]
+    [:html
+     [:head
+      [:link {:rel "stylesheet" :href "css/style.css" :type "text/css"}]]
+     [:body
+      [:div {:class "headers"}
+       [:table {:class "headers"}
+        (doall
+         (map hdr headers))]]
+      [:div {:class "message"}
+       [:pre body]]]]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn edn-response [body]
+  (-> (pr-str body)
+      response/response
+      (response/content-type "application/edn")))
+
+(defn html-response [body]
+  (-> (html body)
+      response/response
+      (response/content-type "text/html")))
+
+(defn txt-response [body]
+  (-> (str body)
+      response/response
+      (response/content-type "text/plain")))
+
+(defn msg-data-response [msg ctype]
+  (edn-response (message->edn msg ctype)))
 
 (defroutes routes
   (GET "/" _
        (response/redirect "/index.html"))
-  (GET  "/find" [query]
-        (edn-response (find-messages query)))
-  (GET  "/msg" [id content-type]
-        (msg-response (get-message id)
-                      (keyword (or content-type :plain))))
+  (GET "/find" [query]
+       (edn-response (find-messages query)))
+  (GET "/msg" [id content-type]
+       (-> id get-message message->html html-response))
+  (GET  "/msg-data" [id content-type]
+        (msg-data-response (get-message id)
+                           (keyword (or content-type :plain))))
   ;; this will serve the main page, the css style files and all the rest
   (route/resources "/")
   (route/not-found "Not Found"))

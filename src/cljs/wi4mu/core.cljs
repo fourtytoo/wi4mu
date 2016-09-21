@@ -8,7 +8,8 @@
             [cljs-time.format :as timef]
             [cljsjs.react-bootstrap]
             [cljsjs.fixed-data-table]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [wi4mu.common :as util])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 (enable-console-print!)
@@ -36,7 +37,7 @@
     ""))
 
 (defn fetch-message [id]
-  (fetch "/msg" {:id id :content-type :plain}))
+  (fetch "/msg-data" {:id id :content-type :plain}))
 
 (defn load-message [id message]
   (reset! message (str "Loading " id " ..."))
@@ -85,16 +86,19 @@
 (defn message-component [message]
   (fn []
     (cond (nil? @message) [:div]
-          (string? @message) [:div @message]
+
+          (string? @message) [:iframe {:src (str "/msg?id=" @message)
+                                       :style {:width "100%" :height "100%"}}]
+
           :else [:div
-                 [:table {:class "headers"}
-                  (doall
-                   (map (fn [tag]
-                          [:tr [:td tag] [:td (hdr message tag)]])
-                        ["date" "subject" "from" "to"]))]
-                 [:frame {:style {:overflow "auto" :height "50%"}}
-                  [:div {:class "message"}
-                   [:pre (:body @message)]]]])))
+                 [:div {:class "headers"}
+                  [:table {:class "headers"}
+                   (doall
+                    (map (fn [[tag value]]
+                           [:tr [:td tag] [:td value]])
+                         (util/sort-headers (:headers @message))))]]
+                 [:div {:class "message"}
+                  [:pre (:body @message)]]])))
 
 (reagent/render [text-input-component search-string message-list]
                 (js/document.getElementById "search-entry"))
@@ -131,6 +135,7 @@
         [row col] (cell-address args)
         data (get-row-data message-list row)]
     (reagent/as-element [Cell {:on-click #(load-message (:msgid data) current-message)}
+                         #_{:on-click #(reset! current-message (:msgid data))}
                          (get data col)])))
 
 (defn date-cell [message-list args]

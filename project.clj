@@ -22,13 +22,13 @@
                  [cljs-http "0.1.41"]
                  [com.andrewmcveigh/cljs-time "0.4.0"]
                  [cljsjs/react-bootstrap "0.30.2-0"
+                  ;; Use Reagent's own version (newer) instead.
                   :exclusions [cljsjs/react]]
                  [cljsjs/fixed-data-table "0.6.3-0"
-                  ;; The version pulled by FDT is old and clashes with
-                  ;; the version pulled by reagent (above) and causes
-                  ;; the "ReactDOM is missing" error.
+                  ;; Use Reagent's own version (newer) instead.
                   :exclusions [cljsjs/react]]
-                 [io.forward/clojure-mail "1.0.5"]]
+                 [io.forward/clojure-mail "1.0.5"]
+                 [hiccup "1.0.5"]]
   
   :plugins [[lein-cljsbuild "1.1.3"]
             [lein-environ "1.0.3"]

@@ -6,7 +6,6 @@
             [ring.middleware.gzip :refer [wrap-gzip]]
             [ring.middleware.logger :refer [wrap-with-logger]]
             [ring.middleware.content-type :refer [wrap-content-type]]
-            [environ.core :refer [env]]
             [org.httpkit.server :refer [run-server]]
             [ring.middleware.format :refer [wrap-restful-format]]
             [ring.util.response :as response]

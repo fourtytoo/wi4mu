@@ -1,7 +1,7 @@
 (ns wi4mu.core
   (:require [reagent.core :as reagent :refer [atom]]
             [cljs.core.async
-             :refer [put! <! >! alts! chan timeout]]
+             :refer [put! <! >! alts! chan timeout sliding-buffer]]
             [cljs-http.client :as http]
             [cljs-time.core :as time]
             [cljs-time.coerce :as timec]
@@ -17,6 +17,7 @@
 (defonce search-string (atom ""))
 (defonce message-list (atom []))
 (defonce current-message (atom nil))
+(def search-string-updates (chan (sliding-buffer 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,6 +57,40 @@
        (reset! message-list)
        go))
 
+(defn get-message-list [search-string]
+  (->> (string/split search-string #"\s+")
+       (assoc {} :query)
+       (assoc {} :query-params)
+       (http/get "/find")))
+
+(defn message-list-updater [message-list search-string-updates]
+  (go-loop [search-string nil
+            query-result (chan)]
+    (let [[value c] (alts! [search-string-updates query-result (timeout 2000)])]
+      (condp = c
+        search-string-updates
+        (do (cljs-http.core/abort! query-result)
+            (recur value (chan)))
+
+        query-result
+        (let [{:keys [status success body] :as answer} value]
+          (reset! message-list
+                  (if (and success (= 200 status))
+                    body
+                    "ERROR!"))
+          (recur search-string (chan)))
+
+        ;; timeout
+        (do
+          (cljs-http.core/abort! query-result)
+          (if (nil? search-string)
+            (recur nil query-result)
+            (do
+              (reset! message-list "Searching...")
+              (recur nil (get-message-list search-string)))))))))
+
+(message-list-updater message-list search-string-updates)
+
 (defn text-input-component [search-string message-list]
   [:div
    [:button {:on-click #(load-message-list @search-string message-list)} "search"]
@@ -66,9 +101,10 @@
                             ;; Treat ENTER as a button press
                             (when (= 13 (.-charCode e))
                               (load-message-list @search-string message-list)))
-            :on-change #(->> % .-target .-value
-                             (reset! search-string))}]
-   ])
+            :on-change (fn [e]
+                         (let [value (->> e .-target .-value)]
+                           (put! search-string-updates value)
+                           (reset! search-string value)))}]])
 
 (defn print-message-body [body]
   [:pre (-> body first :body)])
@@ -148,18 +184,22 @@
 
 (defn message-list-component [message-list]
   (let [mc (partial text-cell message-list)]
-    [:div {:class "list"}
-     (when @message-list
-       [:span "messages: "
-        (count @message-list)])
-     [Table {:width        1000
-             :height       200
-             :rowHeight    25
-             :rowsCount    (count @message-list)
-             :headerHeight 30}
-      [Column {:header "date" :cell #(date-cell message-list %) :columnKey :date :width 150 :fixed true}]
-      [Column {:header "from" :cell mc :columnKey :from :width 200 :flexGrow 1}]
-      [Column {:header "subject" :cell mc :columnKey :subject :width 450 :flexGrow 2}]]]))
+    (if (string? @message-list)
+      [:div [:span @message-list]]
+      [:div {:class "list"}
+       (when @message-list
+         [:span "messages: "
+          (count @message-list)])
+       [Table {:width        1000
+               :height       200
+               :rowHeight    25
+               :rowsCount    (count @message-list)
+               :headerHeight 30}
+        [Column {:header "date" :cell #(date-cell message-list %) :columnKey :date :width 150 :fixed true}]
+        [Column {:header "from" :cell mc :columnKey :from :width 200 :flexGrow 1}]
+        [Column {:header "subject" :cell mc :columnKey :subject :width 450 :flexGrow 2}]]])))
 
 (reagent/render [message-list-component message-list]
                 (js/document.getElementById "message-list"))
+
+

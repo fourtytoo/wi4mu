@@ -1,7 +1,7 @@
 (ns wi4mu.core
   (:require [reagent.core :as reagent :refer [atom]]
-            [cljs.core.async
-             :refer [put! <! >! alts! chan timeout sliding-buffer]]
+            [cljs.core.async :as async
+             :refer [<! >! alts!]]
             [cljs-http.client :as http]
             [cljs-time.core :as time]
             [cljs-time.coerce :as timec]
@@ -17,17 +17,21 @@
 (defonce search-string (atom ""))
 (defonce message-list (atom []))
 (defonce current-message (atom nil))
-(def search-string-updates (chan (sliding-buffer 1)))
+(def search-string-updates (async/chan (async/sliding-buffer 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn fetch [url qparms]
-  (let [c (chan)]
-    (go (let [{:keys [status success body] :as answer} (<! (http/get url {:query-params qparms}))]
-          (if (and success (= 200 status))
-            (>! c body)
-            (>! c nil))))
-    c))
+(defn reply-body [reply]
+  (let [{:keys [status success body] :as answer} reply]
+    (when (and success (= 200 status))
+      body)))
+
+(defn rest-get [url parms]
+  (let [chan (async/chan 1 (map reply-body))]
+    (->> parms
+         (assoc {:channel chan} :query-params)
+         (http/get url))
+    chan))
 
 (def time-formatter
   (timef/formatters :mysql))
@@ -38,7 +42,7 @@
     ""))
 
 (defn fetch-message [id]
-  (fetch "/msg-data" {:id id :content-type :plain}))
+  (rest-get "/msg-data" {:id id :content-type :plain}))
 
 (defn load-message [id message]
   (reset! message (str "Loading " id " ..."))
@@ -47,38 +51,32 @@
        (reset! message)
        go))
 
+(defn fetch-message-list [search-string]
+  (->> (string/split search-string #"\s+")
+       (assoc {} :query)
+       (rest-get "/find")))
+
 (defn load-message-list [query message-list]
   (reset! message-list (str "Searching for " query " ..."))
-  (->> (string/split query #"\s+")
-       (assoc {} :query)
-       (fetch "/find")
+  (->> query
+       fetch-message-list
        <!
-       vec
        (reset! message-list)
        go))
 
-(defn get-message-list [search-string]
-  (->> (string/split search-string #"\s+")
-       (assoc {} :query)
-       (assoc {} :query-params)
-       (http/get "/find")))
-
 (defn message-list-updater [message-list search-string-updates]
   (go-loop [search-string nil
-            query-result (chan)]
-    (let [[value c] (alts! [search-string-updates query-result (timeout 2000)])]
+            query-result (async/chan)]
+    (let [[value c] (alts! [search-string-updates query-result (async/timeout 2000)])]
       (condp = c
         search-string-updates
         (do (cljs-http.core/abort! query-result)
-            (recur value (chan)))
+            (recur value (async/chan)))
 
         query-result
-        (let [{:keys [status success body] :as answer} value]
-          (reset! message-list
-                  (if (and success (= 200 status))
-                    body
-                    "ERROR!"))
-          (recur search-string (chan)))
+        (do
+          (reset! message-list value)
+          (recur search-string (async/chan)))
 
         ;; timeout
         (do
@@ -86,8 +84,8 @@
           (if (nil? search-string)
             (recur nil query-result)
             (do
-              (reset! message-list "Searching...")
-              (recur nil (get-message-list search-string)))))))))
+              (reset! message-list (str "Searching for " search-string " ..."))
+              (recur nil (fetch-message-list search-string)))))))))
 
 (message-list-updater message-list search-string-updates)
 
@@ -103,7 +101,7 @@
                               (load-message-list @search-string message-list)))
             :on-change (fn [e]
                          (let [value (->> e .-target .-value)]
-                           (put! search-string-updates value)
+                           (async/put! search-string-updates value)
                            (reset! search-string value)))}]])
 
 (defn print-message-body [body]

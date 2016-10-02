@@ -90,10 +90,9 @@
 (message-list-updater message-list search-string-updates)
 
 (defn text-input-component [search-string message-list]
-  [:div
+  [:div {:id "search-input"}
    [:button {:on-click #(load-message-list @search-string message-list)} "search"]
    [:input {:type "text"
-            :width "60%"
             :value @search-string
             :on-key-press (fn [e]
                             ;; Treat ENTER as a button press

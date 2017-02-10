@@ -8,6 +8,7 @@
 /lib/
 /log/
 /out/
+/attic/
 /resources/public/js/compiled/**
 /target/
 figwheel_server.log
